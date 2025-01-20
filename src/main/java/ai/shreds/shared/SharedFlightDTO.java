@@ -12,15 +12,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-/**
- * DTO representing detailed flight information including seat availability.
- * Includes validation and utility methods for flight data handling.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -58,115 +51,98 @@ public class SharedFlightDTO {
     private String terminal;
     private String gate;
 
+    @Builder.Default
+    private Map<String, Object> metadata = new HashMap<>();
+
     /**
-     * Calculates the flight duration.
-     * @return Duration of the flight
+     * Gets the duration of the flight.
      */
     public Duration getFlightDuration() {
         return Duration.between(departureTime, arrivalTime);
     }
 
     /**
-     * Checks if seats are available for a specific class.
-     * @param seatClass the class to check availability for
-     * @return true if seats are available, false otherwise
+     * Checks if there are available seats for the specified class.
      */
     public boolean hasAvailabilityForClass(String seatClass) {
         return seatAvailability.stream()
-                .filter(seat -> seat.getSeatClass().equalsIgnoreCase(seatClass))
+                .filter(seat -> seat.getSeatClass().equals(seatClass))
                 .anyMatch(SharedSeatAvailabilityDTO::hasAvailability);
     }
 
     /**
-     * Gets the number of available seats for a specific class.
-     * @param seatClass the class to check availability for
-     * @return number of available seats, 0 if none available
+     * Gets the number of available seats for the specified class.
      */
     public int getAvailableSeatsForClass(String seatClass) {
         return seatAvailability.stream()
-                .filter(seat -> seat.getSeatClass().equalsIgnoreCase(seatClass))
+                .filter(seat -> seat.getSeatClass().equals(seatClass))
+                .mapToInt(SharedSeatAvailabilityDTO::getAvailableSeats)
                 .findFirst()
-                .map(SharedSeatAvailabilityDTO::getAvailableSeats)
                 .orElse(0);
     }
 
     /**
-     * Gets seat availability for a specific class.
-     * @param seatClass the class to get availability for
-     * @return optional containing seat availability if found
+     * Gets seat availability information for a specific class.
      */
     public Optional<SharedSeatAvailabilityDTO> getSeatAvailability(String seatClass) {
         return seatAvailability.stream()
-                .filter(seat -> seat.getSeatClass().equalsIgnoreCase(seatClass))
+                .filter(seat -> seat.getSeatClass().equals(seatClass))
                 .findFirst();
     }
 
     /**
-     * Validates all aspects of the flight data.
-     * @throws IllegalStateException if validation fails
-     */
-    public void validate() {
-        validateTimes();
-        validateAirportCodes();
-        validateSeatAvailability();
-    }
-
-    /**
-     * Validates that arrival time is after departure time.
-     * @throws IllegalStateException if arrival time is before or equal to departure time
-     */
-    private void validateTimes() {
-        if (arrivalTime.isBefore(departureTime) || arrivalTime.equals(departureTime)) {
-            throw new IllegalStateException("Arrival time must be after departure time");
-        }
-    }
-
-    /**
-     * Validates airport codes.
-     * @throws IllegalStateException if airport codes are invalid
-     */
-    private void validateAirportCodes() {
-        if (origin.equals(destination)) {
-            throw new IllegalStateException("Origin and destination cannot be the same");
-        }
-    }
-
-    /**
-     * Validates seat availability data.
-     * @throws IllegalStateException if seat availability is invalid
-     */
-    private void validateSeatAvailability() {
-        if (seatAvailability == null) {
-            throw new IllegalStateException("Seat availability cannot be null");
-        }
-        seatAvailability.forEach(SharedSeatAvailabilityDTO::validateSeatClass);
-    }
-
-    /**
      * Checks if the flight is delayed.
-     * @return true if flight status indicates a delay
      */
     public boolean isDelayed() {
         return "DELAYED".equals(status);
     }
 
     /**
-     * Creates a copy of this DTO with updated seat availability.
-     * @param updatedAvailability new seat availability list
-     * @return new DTO instance with updated availability
+     * Creates a new instance with updated seat availability.
      */
     public SharedFlightDTO withUpdatedAvailability(List<SharedSeatAvailabilityDTO> updatedAvailability) {
         return SharedFlightDTO.builder()
-                .flightId(this.flightId)
-                .airlineId(this.airlineId)
-                .departureTime(this.departureTime)
-                .arrivalTime(this.arrivalTime)
-                .origin(this.origin)
-                .destination(this.destination)
-                .seatAvailability(new ArrayList<>(updatedAvailability))
-                .status(this.status)
-                .terminal(this.terminal)
-                .gate(this.gate)
+                .flightId(flightId)
+                .airlineId(airlineId)
+                .departureTime(departureTime)
+                .arrivalTime(arrivalTime)
+                .origin(origin)
+                .destination(destination)
+                .seatAvailability(updatedAvailability)
+                .status(status)
+                .terminal(terminal)
+                .gate(gate)
+                .metadata(new HashMap<>(metadata))
                 .build();
+    }
+
+    /**
+     * Validates the flight data.
+     */
+    public void validate() {
+        if (flightId == null) {
+            throw new IllegalStateException("Flight ID cannot be null");
+        }
+        if (airlineId == null) {
+            throw new IllegalStateException("Airline ID cannot be null");
+        }
+        if (departureTime == null) {
+            throw new IllegalStateException("Departure time cannot be null");
+        }
+        if (arrivalTime == null) {
+            throw new IllegalStateException("Arrival time cannot be null");
+        }
+        if (origin == null || origin.trim().isEmpty()) {
+            throw new IllegalStateException("Origin cannot be null or empty");
+        }
+        if (destination == null || destination.trim().isEmpty()) {
+            throw new IllegalStateException("Destination cannot be null or empty");
+        }
+        if (arrivalTime.isBefore(departureTime)) {
+            throw new IllegalStateException("Arrival time cannot be before departure time");
+        }
+        if (seatAvailability != null) {
+            seatAvailability.forEach(SharedSeatAvailabilityDTO::validateSeatClass);
+        }
     }
 }

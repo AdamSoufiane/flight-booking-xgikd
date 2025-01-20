@@ -22,4 +22,9 @@ public class ApplicationSearchRequest {
     private boolean isRoundTrip;
     private String searchId;
     private LocalDateTime searchTimestamp;
+    
+    // Connection related fields
+    private int maxConnections;
+    private int minConnectionTime;
+    private int maxConnectionTime;
 }

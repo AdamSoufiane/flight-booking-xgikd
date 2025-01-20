@@ -92,7 +92,8 @@ public class InfrastructureAviationStackClientImpl implements DomainPortExternal
         });
     }
 
-    private DomainEntityFlight enrichSingleFlight(DomainEntityFlight flight) {
+    @Override
+    public DomainEntityFlight enrichSingleFlight(DomainEntityFlight flight) {
         String url = buildApiUrl(flight);
         ResponseEntity<AviationStackResponse> response = restTemplate.getForEntity(url, AviationStackResponse.class);
 
